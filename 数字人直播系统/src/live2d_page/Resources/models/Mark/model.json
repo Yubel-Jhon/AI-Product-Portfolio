@@ -1,0 +1,9 @@
+{
+  "name": "Mark",
+  "type": "live2d",
+  "model": "Mark.model3.json",
+  "voice": "zh-CN-YunxiNeural",
+  "zoom": 2.0,
+  "y": 0.0,
+  "preview": "Mark.2048/texture_00.png"
+}

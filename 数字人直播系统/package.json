@@ -1,0 +1,44 @@
+{
+  "name": "anime-digital-human",
+  "version": "0.5.0",
+  "description": "动漫数字人直播系统 · Electron 桌面应用（换模特 / 换语料，双击即用）",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win"
+  },
+  "author": "Yubel-Jhon",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.yubeljhon.anime-digital-human",
+    "productName": "动漫数字人",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      { "from": "venv", "to": "venv" },
+      { "from": "src", "to": "src" },
+      { "from": ".env", "to": ".env" }
+    ],
+    "win": {
+      "target": ["nsis"],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "动漫数字人",
+      "artifactName": "AnimeDigitalHuman-Setup-${version}.exe"
+    }
+  }
+}

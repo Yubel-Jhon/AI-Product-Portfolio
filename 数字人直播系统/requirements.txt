@@ -1,0 +1,6 @@
+openai
+edge-tts
+chromadb
+sentence-transformers
+python-dotenv
+paramiko

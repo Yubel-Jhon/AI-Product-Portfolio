@@ -1,0 +1,12 @@
+{
+  "name": "御姐",
+  "type": "puppet",
+  "image": "body.png",
+  "face": "face.json",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "pitch": "+5Hz",
+  "rate": "+3%",
+  "zoom": 1.0,
+  "y": 0.0,
+  "preview": "body.png"
+}

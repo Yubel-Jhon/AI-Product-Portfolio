@@ -1,0 +1,9 @@
+{
+  "name": "Hiyori（ひより）",
+  "type": "live2d",
+  "model": "Hiyori.model3.json",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "zoom": 2.0,
+  "y": 0.0,
+  "preview": "Hiyori.2048/texture_00.png"
+}

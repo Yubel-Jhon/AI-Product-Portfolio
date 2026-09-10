@@ -1,0 +1,303 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+    <title>动漫数字人 · Live2D</title>
+    <style>
+      html, body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+        font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+      }
+      #live2d {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
+      /* 字幕 + 情绪标签（透明底，OBS 浏览器源可叠加） */
+      #hud {
+        position: fixed;
+        left: 0;
+        bottom: 8vh;
+        width: 100%;
+        text-align: center;
+        pointer-events: none;
+      }
+      #subtitle {
+        color: #fff;
+        font-size: 28px;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+        background: rgba(0,0,0,0.45);
+        display: inline-block;
+        padding: 8px 24px;
+        border-radius: 20px;
+      }
+      #emotion {
+        color: #ffd54f;
+        font-size: 16px;
+        margin-top: 6px;
+        opacity: 0.85;
+      }
+      #status {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        color: #0f0;
+        font-size: 13px;
+        font-family: monospace;
+      }
+      /* 网页输入框：demo 模式下直接打字喂给数字人，连上 WS 后显示 */
+      #chatbar {
+        position: fixed;
+        left: 50%;
+        bottom: 16px;
+        transform: translateX(-50%);
+        display: none;
+        gap: 8px;
+        z-index: 20;
+        align-items: center;
+      }
+      #chatbar.show { display: flex; }
+      #chat-input {
+        width: 320px;
+        padding: 10px 14px;
+        font-size: 15px;
+        border: 1px solid #ffd54f;
+        border-radius: 24px;
+        background: rgba(0, 0, 0, 0.6);
+        color: #fff;
+        outline: none;
+      }
+      #chat-send {
+        padding: 10px 20px;
+        font-size: 15px;
+        color: #000;
+        background: #ffd54f;
+        border: none;
+        border-radius: 24px;
+        cursor: pointer;
+      }
+      /* 启动遮罩：半透明，模特在背后可见；点一下解锁音频（autoplay 策略） */
+      #boot-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+      }
+      #boot-overlay .btn {
+        color: #fff;
+        font-size: 24px;
+        letter-spacing: 2px;
+        padding: 14px 44px;
+        border: 2px solid #ffd54f;
+        border-radius: 40px;
+        background: rgba(0, 0, 0, 0.55);
+        user-select: none;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="live2d"></canvas>
+    <div id="hud">
+      <div id="subtitle">正在加载模型…</div>
+      <div id="emotion"></div>
+    </div>
+    <div id="status">booting…</div>
+    <div id="boot-overlay" style="display:none"><div class="btn">▶ 点击开始直播</div></div>
+    <div id="chatbar">
+      <input id="chat-input" type="text" placeholder="输入内容，回车发送…" />
+      <button id="chat-send">发送</button>
+    </div>
+    <div id="fatal" style="display:none; position:fixed; inset:0; background:#200; color:#ff6b6b; font-size:18px; padding:24px; z-index:99; white-space:pre-wrap; font-family:monospace;"></div>
+
+    <!-- 提前注册错误捕获：任何 JS 错误直接显示在页面上，方便排查（不再纯黑） -->
+    <script>
+      window.addEventListener('error', function (e) {
+        var el = document.getElementById('fatal')
+        if (el) { el.style.display = 'block'; el.textContent += '⚠ ' + (e.message || e.type) + '\n' }
+      })
+      window.addEventListener('unhandledrejection', function (e) {
+        var el = document.getElementById('fatal')
+        if (el) { el.style.display = 'block'; el.textContent += '⚠ ' + ((e.reason && e.reason.message) || e.reason) + '\n' }
+      })
+    </script>
+
+    <!-- 1) Live2D Cubism Core（官方运行时，必须最先加载） -->
+    <script src="/Core/live2dcubismcore.min.js"></script>
+
+    <!-- 2) 本地 bundle：pixi.js + easy-live2d + @pixi/sound 打包成单文件，不依赖 CDN/外网。
+         （之前走 jsdelivr CDN，代理一死就黑屏。esbuild 打包后本地直读，彻底绕开。） -->
+    <script type="module">
+      import { Application, Ticker, Config, Live2DSprite, Priority, sound } from '/vendor/live2d.bundle.mjs'
+
+      const $ = (id) => document.getElementById(id)
+      const status = (s) => { $('status').textContent = s }
+
+      Config.MouseFollow = true
+      Config.MotionGroupIdle = 'Idle'
+
+      const canvas = $('live2d')
+      const app = new Application()
+      await app.init({
+        canvas,
+        backgroundAlpha: 0,
+        autoDensity: true,
+        resolution: Math.max(window.devicePixelRatio || 1, 1),
+        preserveDrawingBuffer: true, // OBS 浏览器源抓 WebGL 时避免黑帧/闪烁
+      })
+
+      const sprite = new Live2DSprite({
+        modelPath: '/Resources/Hiyori/Hiyori.model3.json',
+        ticker: Ticker.shared,
+      })
+      app.stage.addChild(sprite)
+
+      await sprite.ready
+      // 等比缩放（只设 width 会拉变形 → 黑屏，必须 x/y 同比例）。
+      // 放大到「上半身占满画面」：ZOOM 放大 + 模型顶部对齐画布顶部，腿部溢出下方被裁掉。
+      // 想再调：URL 加 ?zoom=2.5&y=-0.1（y 负值=整体上移，裁掉头顶留白），或控制台 window.__fitModel(zoom, y)。
+      const mcs = sprite.getModelCanvasSize()
+      const qs0 = new URLSearchParams(location.search)
+
+      function fitModel(zoom, yBias) {
+        const fit = Math.min(canvas.clientWidth / mcs.width, canvas.clientHeight / mcs.height)
+        const scale = fit * zoom
+        sprite.scale.set(scale)
+        sprite.position.set(
+          (canvas.clientWidth - mcs.width * scale) / 2,
+          yBias * canvas.clientHeight,
+        )
+      }
+      window.__fitModel = fitModel
+      fitModel(parseFloat(qs0.get('zoom')) || 2.2, parseFloat(qs0.get('y')) || 0)
+
+      await sprite.startMotion({ group: 'Idle', no: 0, priority: Priority.Normal })
+      $('subtitle').textContent = '' // 模型已就绪，清掉「正在加载模型…」占位
+      status('ready · 等待 WebSocket 推流')
+
+      // —— 说话：喂 mp3(URL) + 字幕 + 情绪 ——
+      // playVoice 的 voicePath 必须是个 URL（内部 fetch + @pixi/sound 都要），
+      // 所以 WebSocket 收到的二进制 mp3 要先 createObjectURL 转 blob: URL。
+      let ws = null
+      let pendingMeta = null
+
+      // —— 情绪 → 表情 ——
+      // 只覆盖 idle 动作里恒为常量的「安全」参数（眉毛/笑眼/脸颊/嘴型），
+      // 不碰 ParamEyeLOpen(眨眼)/ParamMouthOpenY(唇同步)/ParamAngle*(头部)，
+      // 否则持久覆盖会把这些自然动画压死。
+      // setParameterValueById 是「持久覆盖、每帧末尾重写」，weight<1 时每帧平滑逼近目标。
+      const NEUTRAL = {
+        ParamEyeLSmile: 0, ParamEyeRSmile: 0, ParamCheek: 0,
+        ParamBrowLY: 0, ParamBrowRY: 0, ParamBrowLAngle: 0, ParamBrowRAngle: 0,
+        ParamMouthForm: 1, // Hiyori 默认就是微笑嘴型
+      }
+      const EMOTION_PARAMS = {
+        开心: { ParamEyeLSmile: 1, ParamEyeRSmile: 1, ParamCheek: 1, ParamMouthForm: 1 },
+        惊讶: { ParamBrowLY: 0.9, ParamBrowRY: 0.9, ParamBrowLAngle: 0.6, ParamBrowRAngle: 0.6, ParamMouthForm: 0 },
+        卖萌: { ParamEyeLSmile: 1, ParamEyeRSmile: 0.4, ParamCheek: 0.8, ParamBrowLAngle: 0.4, ParamBrowRAngle: 0.4, ParamMouthForm: 1 },
+      }
+
+      function setEmotion(emo) {
+        const map = { ...NEUTRAL, ...(EMOTION_PARAMS[emo] || {}) }
+        for (const [id, v] of Object.entries(map)) {
+          const r = sprite.getParameterValueRangeById(id)
+          const val = r ? Math.max(r.min, Math.min(r.max, v)) : v
+          sprite.setParameterValueById(id, val, 0.4)
+        }
+      }
+
+      async function speak(url, text, emotion) {
+        $('subtitle').textContent = text || ''
+        $('emotion').textContent = emotion ? `[${emotion}]` : ''
+        setEmotion(emotion)
+        try {
+          await sprite.playVoice({ voicePath: url })
+        } finally {
+          try { URL.revokeObjectURL(url) } catch (e) {}
+          setEmotion('平静')
+          if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'done' }))
+        }
+      }
+
+      function unlockAudio() {
+        // 必须在用户手势（点击）里调用，否则浏览器 autoplay 策略拦 AudioContext → 没声音
+        try { sound.context?.resume?.() } catch (e) {}
+        try { sound.context?.audioContext?.resume?.() } catch (e) {}
+      }
+
+      function connect() {
+        const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
+        ws = new WebSocket(`${proto}//${location.host}/ws`)
+        ws.onopen = () => { status('ws 已连接，网页可输入'); $('chatbar').classList.add('show') }
+        ws.onclose = () => { status('ws 断开，3s 后重连…'); setTimeout(connect, 3000) }
+        ws.onerror = () => ws.close()
+        ws.onmessage = (ev) => {
+          if (typeof ev.data === 'string') {
+            try {
+              const m = JSON.parse(ev.data)
+              if (m.type === 'speak') pendingMeta = m
+            } catch (e) {}
+          } else {
+            // 二进制 mp3（紧跟在其元信息 text 后面）
+            if (!pendingMeta) return
+            const m = pendingMeta
+            pendingMeta = null
+            const blob = ev.data instanceof Blob ? ev.data : new Blob([ev.data], { type: 'audio/mpeg' })
+            const url = URL.createObjectURL(blob)
+            speak(url, m.subtitle, m.emotion)
+          }
+        }
+      }
+
+      // —— 网页输入：把输入框内容当弹幕发给 orchestrator ——
+      function sendComment() {
+        const input = $('chat-input')
+        const text = input.value.trim()
+        if (!text) return
+        if (!ws || ws.readyState !== 1) { status('ws 未连接，无法发送'); return }
+        ws.send(JSON.stringify({ type: 'comment', content: text }))
+        input.value = ''
+        status('已发送：' + text)
+      }
+      $('chat-send').onclick = sendComment
+      $('chat-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') sendComment()
+      })
+
+      // 暴露到控制台，方便手动调试
+      window.__sprite = sprite
+      window.__app = app
+      window.__speak = (url, text, emotion) => speak(url, text, emotion)
+      window.__setEmotion = setEmotion
+
+      const qs = new URLSearchParams(location.search)
+      if (qs.get('emotion')) {
+        // ?emotion=惊讶 —— 单独验证表情（不连 WS、不播放）
+        setEmotion(qs.get('emotion'))
+        status(`表情演示：${qs.get('emotion')}`)
+      } else if (qs.get('demo') === '1') {
+        // 演示兜底：不带 WebSocket 也能本地验证嘴型（?demo=1）
+        speak('/test.mp3', '大家好呀，我是小主播，欢迎来到直播间～', '开心')
+        status('demo 模式：播放本地 test.mp3')
+      } else {
+        // 直播模式：先弹启动遮罩，主播点一下解锁音频（autoplay 策略），再连 WS 开始播
+        $('boot-overlay').style.display = 'flex'
+        $('boot-overlay').onclick = () => {
+          $('boot-overlay').onclick = null
+          unlockAudio()
+          $('boot-overlay').style.display = 'none'
+          connect()
+        }
+      }
+    </script>
+  </body>
+</html>

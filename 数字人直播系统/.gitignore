@@ -1,0 +1,30 @@
+# 敏感信息（含真实 key / 密码，绝不提交）
+.env
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# 数据与中间产物
+chroma_db/
+state.json
+*.mp3
+*.wav
+/*.mp4
+electron-backend.log
+electron-debug.log
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 打包产物
+dist/
+
+# 冗余源文件（官方样例的 git clone，已复制进 models/；以及立绘原始大图）
+src/live2d_page/Resources/Candidates/
+oneesan_source.png
+
+# npm 依赖（esbuild 打包用，可 npm install 重建；live2d.bundle.mjs 已提交）
+node_modules/

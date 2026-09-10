@@ -1,0 +1,9 @@
+{
+  "name": "Wanko（わんこ）",
+  "type": "live2d",
+  "model": "Wanko.model3.json",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "zoom": 2.0,
+  "y": 0.0,
+  "preview": "Wanko.1024/texture_00.png"
+}

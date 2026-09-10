@@ -1,0 +1,9 @@
+{
+  "name": "Haru（春）",
+  "type": "live2d",
+  "model": "Haru.model3.json",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "zoom": 2.0,
+  "y": 0.0,
+  "preview": "Haru.2048/texture_00.png"
+}

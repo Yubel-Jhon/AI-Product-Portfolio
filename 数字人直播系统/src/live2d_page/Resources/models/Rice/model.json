@@ -1,0 +1,9 @@
+{
+  "name": "Rice",
+  "type": "live2d",
+  "model": "Rice.model3.json",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "zoom": 2.0,
+  "y": 0.0,
+  "preview": "Rice.2048/texture_00.png"
+}

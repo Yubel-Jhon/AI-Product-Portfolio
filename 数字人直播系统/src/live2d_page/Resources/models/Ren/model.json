@@ -1,0 +1,9 @@
+{
+  "name": "Ren（恋）",
+  "type": "live2d",
+  "model": "Ren.model3.json",
+  "voice": "zh-CN-YunxiNeural",
+  "zoom": 2.0,
+  "y": 0.0,
+  "preview": "Ren.2048/texture_00.png"
+}

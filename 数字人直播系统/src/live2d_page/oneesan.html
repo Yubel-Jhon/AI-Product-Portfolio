@@ -1,0 +1,289 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+    <title>动漫数字人 · 御姐立绘</title>
+    <style>
+      html, body {
+        margin: 0; width: 100%; height: 100%;
+        background: #000; overflow: hidden;
+        font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+      }
+      #puppet { display: block; width: 100vw; height: 100vh; }
+      #hud { position: fixed; left: 0; bottom: 8vh; width: 100%; text-align: center; pointer-events: none; }
+      #subtitle {
+        color: #fff; font-size: 28px; text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+        background: rgba(0,0,0,0.45); display: inline-block; padding: 8px 24px; border-radius: 20px;
+      }
+      #emotion { color: #ffd54f; font-size: 16px; margin-top: 6px; opacity: 0.85; }
+      #status { position: fixed; top: 12px; left: 12px; color: #0f0; font-size: 13px; font-family: monospace; }
+      #chatbar { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); display: none; gap: 8px; z-index: 20; align-items: center; }
+      #chatbar.show { display: flex; }
+      #chat-input {
+        width: 320px; padding: 10px 14px; font-size: 15px; border: 1px solid #ffd54f;
+        border-radius: 24px; background: rgba(0,0,0,0.6); color: #fff; outline: none;
+      }
+      #chat-send { padding: 10px 20px; font-size: 15px; color: #000; background: #ffd54f; border: none; border-radius: 24px; cursor: pointer; }
+      #boot-overlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.3);
+        display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;
+      }
+      #boot-overlay .btn {
+        color: #fff; font-size: 24px; letter-spacing: 2px; padding: 14px 44px;
+        border: 2px solid #ffd54f; border-radius: 40px; background: rgba(0,0,0,0.55); user-select: none;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="puppet"></canvas>
+    <div id="hud"><div id="subtitle">正在加载角色…</div><div id="emotion"></div></div>
+    <div id="status">booting…</div>
+    <div id="boot-overlay" style="display:none"><div class="btn">▶ 点击开始直播</div></div>
+    <div id="chatbar">
+      <input id="chat-input" type="text" placeholder="输入内容，回车发送…" />
+      <button id="chat-send">发送</button>
+    </div>
+    <div id="fatal" style="display:none; position:fixed; inset:0; background:#200; color:#ff6b6b; font-size:18px; padding:24px; z-index:99; white-space:pre-wrap; font-family:monospace;"></div>
+
+    <script>
+      window.addEventListener('error', e => { const el = document.getElementById('fatal'); if (el) { el.style.display='block'; el.textContent += '⚠ ' + (e.message||e.type) + '\n' } })
+      window.addEventListener('unhandledrejection', e => { const el = document.getElementById('fatal'); if (el) { el.style.display='block'; el.textContent += '⚠ ' + ((e.reason&&e.reason.message)||e.reason) + '\n' } })
+
+      const $ = id => document.getElementById(id)
+      const status = s => { $('status').textContent = s }
+
+      // ============ 角色参数（来自 mediapipe 定位 + 采样，face.json 同源） ============
+      const CFG = {
+        W: 1728, H: 2154,
+        faceX: 870,          // 脸水平中心（用于水平居中）
+        anchorY: 820,        // 眼睛大致高度（用于垂直定位）
+        eyes: [
+          { cx: 756, cy: 813, w: 94, h: 33 },
+          { cx: 982, cy: 831, w: 85, h: 24 },
+        ],
+        mouth: { cx: 868, cy: 1033, w: 175 },
+        SKIN: '#665347', MOUTH_INNER: '#270e08', TONGUE: '#a05a40', LASH: '#1a0e08',
+      }
+
+      const canvas = $('puppet')
+      const ctx = canvas.getContext('2d')
+      const img = new Image()
+      img.src = '/Resources/OneeSan/body.png'
+
+      let S = 1, ox = 0, oy = 0, pivotX = 0, pivotY = 0
+
+      function fitModel(zoom, yBias) {
+        const q = new URLSearchParams(location.search)
+        zoom = zoom != null ? zoom : (parseFloat(q.get('zoom')) || 1.0)
+        yBias = yBias != null ? yBias : (parseFloat(q.get('y')) || 0)
+        const dpr = Math.max(window.devicePixelRatio || 1, 1)
+        const cw = canvas.clientWidth, ch = canvas.clientHeight
+        canvas.width = cw * dpr; canvas.height = ch * dpr
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0)   // 之后都用 CSS 像素坐标
+        S = (cw / CFG.W) * zoom
+        ox = cw / 2 - CFG.faceX * S
+        oy = (0.35 + yBias) * ch - CFG.anchorY * S
+        // 呼吸/摇摆的枢轴：胸前一点，头顶不晃太狠
+        pivotX = cw / 2
+        pivotY = oy + 1450 * S
+      }
+
+      // ============ 动画状态 ============
+      let squint = 0, mouthMax = 0.7   // 情绪带来的持续效果
+      let blink = 0                    // 瞬态眨眼 0(睁)→1(闭)→0
+      let nextBlink = performance.now() + 2200
+      let mouthOpen = 0                // 当前嘴张开量 0..1
+      let speaking = false
+      let audioEl = null, audioCtx = null, analyser = null, analyserBuf = null
+
+      function setEmotion(emo) {
+        // 开心/卖萌 → 眯眼；惊讶 → 嘴张更大。平静 → 全复位。
+        if (emo === '开心') { squint = 0.35; mouthMax = 0.7 }
+        else if (emo === '卖萌') { squint = 0.42; mouthMax = 0.65 }
+        else if (emo === '惊讶') { squint = 0.0; mouthMax = 1.0 }
+        else { squint = 0; mouthMax = 0.7 }
+      }
+
+      function roundRect(x, y, w, h, r) {
+        r = Math.min(r, w/2, h/2)
+        ctx.beginPath()
+        ctx.moveTo(x+r, y)
+        ctx.arcTo(x+w, y, x+w, y+h, r)
+        ctx.arcTo(x+w, y+h, x, y+h, r)
+        ctx.arcTo(x, y+h, x, y, r)
+        ctx.arcTo(x, y, x+w, y, r)
+        ctx.closePath()
+      }
+
+      // 把图像坐标点映射到当前（已应用呼吸/摇摆的）绘制坐标系
+      function drawOverlays() {
+        for (const e of CFG.eyes) {
+          const ex = ox + e.cx * S, ey = oy + e.cy * S
+          const ew = e.w * S, eh = e.h * S
+          const close = Math.min(1, squint + blink)
+          const cover = eh * close
+          if (cover < 0.5) continue
+          ctx.fillStyle = CFG.SKIN
+          roundRect(ex - ew/2, ey - eh/2, ew, cover, ew * 0.28)
+          ctx.fill()
+          // 睫毛线（闭眼时的那条弧线）
+          ctx.strokeStyle = CFG.LASH
+          ctx.lineWidth = Math.max(1, 2.2 * S)
+          ctx.beginPath()
+          ctx.moveTo(ex - ew/2, ey - eh/2 + cover)
+          ctx.quadraticCurveTo(ex, ey - eh/2 + cover - eh*0.18, ex + ew/2, ey - eh/2 + cover)
+          ctx.stroke()
+        }
+        if (mouthOpen > 0.03) {
+          const mx = ox + CFG.mouth.cx * S, my = oy + CFG.mouth.cy * S
+          const mw = CFG.mouth.w * S * 0.62
+          const mh = mw * 0.55 * mouthOpen
+          ctx.fillStyle = CFG.MOUTH_INNER
+          ctx.beginPath()
+          ctx.ellipse(mx, my, mw/2, Math.max(mh/2, 1), 0, 0, Math.PI*2)
+          ctx.fill()
+          if (mouthOpen > 0.25) {   // 舌头
+            ctx.fillStyle = CFG.TONGUE
+            ctx.beginPath()
+            ctx.ellipse(mx, my + mh*0.28, mw*0.34, mh*0.38, 0, 0, Math.PI*2)
+            ctx.fill()
+          }
+        }
+      }
+
+      let t0 = performance.now()
+      function tick(now) {
+        const t = (now - t0) / 1000
+        // 呼吸 ~0.22Hz，摇摆 ~0.11Hz，上下微晃 ~0.35Hz
+        const breathe = 1 + Math.sin(t * 2 * Math.PI * 0.22) * 0.012
+        const sway = Math.sin(t * 2 * Math.PI * 0.11) * 0.012
+        const bob = Math.sin(t * 2 * Math.PI * 0.35) * 3.5 * S
+        // 眨眼：每 2.5~6s 一次，持续 ~180ms
+        if (now > nextBlink) { blink = 1; nextBlink = now + 2500 + Math.random() * 3500 }
+        if (blink > 0) blink = Math.max(0, blink - 0.12)   // ~每帧衰减，约 8 帧归零
+
+        // 嘴型：说话时按音频幅度，否则复位
+        if (speaking) {
+          let amp = 0.5
+          if (analyser && analyserBuf) {
+            analyser.getByteTimeDomainData(analyserBuf)
+            let s = 0
+            for (let i = 0; i < analyserBuf.length; i++) { const v = (analyserBuf[i]-128)/128; s += v*v }
+            amp = Math.sqrt(s / analyserBuf.length)
+          } else {
+            amp = 0.4 + 0.3 * Math.sin(t * 2 * Math.PI * 6)   // 无分析器时 ~6Hz 摆动
+          }
+          mouthOpen = Math.min(mouthMax, Math.max(0.05, amp * mouthMax * 1.6))
+        } else {
+          mouthOpen = 0
+        }
+
+        ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight)
+        ctx.save()
+        ctx.translate(pivotX, pivotY)
+        ctx.rotate(sway)
+        ctx.scale(breathe, breathe)
+        ctx.translate(-pivotX + 0, -pivotY + bob)
+        ctx.drawImage(img, ox, oy, CFG.W * S, CFG.H * S)
+        drawOverlays()
+        ctx.restore()
+
+        requestAnimationFrame(tick)
+      }
+
+      // ============ 说话 ============
+      function speak(url, text, emotion) {
+        $('subtitle').textContent = text || ''
+        $('emotion').textContent = emotion ? `[${emotion}]` : ''
+        setEmotion(emotion)
+        speaking = true
+        if (!audioEl) {
+          audioEl = new Audio()
+          audioEl.onended = onAudioEnd
+        }
+        window.__audio = audioEl
+        audioEl.src = url
+        audioEl.play().catch(() => {})
+        if (!audioCtx && audioEl) {
+          try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+            const src = audioCtx.createMediaElementSource(audioEl)
+            analyser = audioCtx.createAnalyser()
+            analyser.fftSize = 512
+            analyserBuf = new Uint8Array(analyser.fftSize)
+            src.connect(analyser)
+            analyser.connect(audioCtx.destination)
+          } catch (e) { analyser = null }
+        }
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume()
+      }
+      function onAudioEnd() {
+        speaking = false
+        mouthOpen = 0
+        setEmotion('平静')
+        try { URL.revokeObjectURL(audioEl.src) } catch (e) {}
+        if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'done' }))
+      }
+
+      function unlockAudio() {
+        try { if (audioCtx) audioCtx.resume() } catch (e) {}
+      }
+
+      // ============ WebSocket（与 orchestrator 协议一致） ============
+      let ws = null, pendingMeta = null
+      function connect() {
+        const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
+        ws = new WebSocket(`${proto}//${location.host}/ws`)
+        ws.onopen = () => { status('ws 已连接，网页可输入'); $('chatbar').classList.add('show') }
+        ws.onclose = () => { status('ws 断开，3s 后重连…'); setTimeout(connect, 3000) }
+        ws.onerror = () => ws.close()
+        ws.onmessage = ev => {
+          if (typeof ev.data === 'string') {
+            try { const m = JSON.parse(ev.data); if (m.type === 'speak') pendingMeta = m } catch (e) {}
+          } else {
+            if (!pendingMeta) return
+            const m = pendingMeta; pendingMeta = null
+            const blob = ev.data instanceof Blob ? ev.data : new Blob([ev.data], { type: 'audio/mpeg' })
+            speak(URL.createObjectURL(blob), m.subtitle, m.emotion)
+          }
+        }
+      }
+      function sendComment() {
+        const input = $('chat-input'), text = input.value.trim()
+        if (!text) return
+        if (!ws || ws.readyState !== 1) { status('ws 未连接，无法发送'); return }
+        ws.send(JSON.stringify({ type: 'comment', content: text }))
+        input.value = ''
+        status('已发送：' + text)
+      }
+      $('chat-send').onclick = sendComment
+      $('chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendComment() })
+
+      window.__fitModel = fitModel
+      window.__setEmotion = setEmotion
+
+      // ============ 启动 ============
+      img.onload = () => {
+        fitModel()
+        $('subtitle').textContent = ''
+        status('ready · 等待 WebSocket 推流')
+        requestAnimationFrame(tick)
+        const q = new URLSearchParams(location.search)
+        if (q.get('emotion')) { setEmotion(q.get('emotion')); status(`表情演示：${q.get('emotion')}`) }
+        else if (q.get('demo') === '1') { status('demo 模式（立绘无本地音频，直接连 WS 演示）'); connect() }
+        else {
+          $('boot-overlay').style.display = 'flex'
+          $('boot-overlay').onclick = () => {
+            $('boot-overlay').onclick = null
+            unlockAudio()
+            $('boot-overlay').style.display = 'none'
+            connect()
+          }
+        }
+      }
+      window.addEventListener('resize', () => fitModel())
+    </script>
+  </body>
+</html>

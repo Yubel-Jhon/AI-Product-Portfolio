@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+    <title>控制台 · 动漫数字人</title>
+    <style>
+      :root {
+        --bg: #0e0f13; --panel: #171922; --card: #1e2029;
+        --border: #2a2d3a; --text: #e8eaf0; --muted: #8a8f9e;
+        --accent: #ffd54f; --accent-dim: #4a3f1a; --ok: #7dffa0;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+        font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+      }
+      header {
+        padding: 20px 28px; border-bottom: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+      }
+      header h1 { margin: 0; font-size: 20px; font-weight: 600; }
+      header .combo { color: var(--muted); font-size: 13px; }
+      header .combo b { color: var(--accent); font-weight: 600; }
+      .actions { display: flex; gap: 10px; }
+      button {
+        cursor: pointer; border: 1px solid var(--border); border-radius: 10px;
+        background: var(--panel); color: var(--text); padding: 9px 16px; font-size: 14px;
+      }
+      button:hover { border-color: var(--accent); }
+      button.primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+      main { padding: 24px 28px; max-width: 1200px; margin: 0 auto; }
+      section { margin-bottom: 32px; }
+      section h2 { font-size: 15px; color: var(--muted); font-weight: 600; margin: 0 0 14px; letter-spacing: 1px; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+      .card {
+        background: var(--card); border: 2px solid var(--border); border-radius: 14px;
+        padding: 10px; cursor: pointer; text-align: center; transition: border-color .15s, transform .1s;
+        position: relative; overflow: hidden;
+      }
+      .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+      .card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+      .card .thumb {
+        width: 100%; aspect-ratio: 3/4; border-radius: 8px; object-fit: cover;
+        background: #000; display: block;
+      }
+      .card .name { margin-top: 8px; font-size: 14px; font-weight: 600; }
+      .card .meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+      .badge {
+        position: absolute; top: 8px; right: 8px; font-size: 10px; padding: 2px 7px;
+        border-radius: 20px; background: rgba(0,0,0,0.6); color: var(--ok); border: 1px solid var(--border);
+      }
+      .check {
+        position: absolute; top: 8px; left: 8px; width: 22px; height: 22px; border-radius: 50%;
+        background: var(--accent); color: #000; font-size: 14px; font-weight: 700; line-height: 22px;
+        display: none;
+      }
+      .card.active .check { display: block; }
+      .empty { color: var(--muted); font-size: 13px; }
+      .tip { color: var(--muted); font-size: 12px; margin-top: 14px; line-height: 1.6; }
+      .tip code { color: var(--accent); background: var(--panel); padding: 1px 6px; border-radius: 4px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>动漫数字人 · 控制台</h1>
+        <div class="combo" id="combo">加载中…</div>
+      </div>
+      <div class="actions">
+        <button id="refresh">刷新列表</button>
+        <button class="primary" id="open-stage">打开直播页 ↗</button>
+      </div>
+    </header>
+
+    <main>
+      <section>
+        <h2>模特（点击切换）</h2>
+        <div class="grid" id="models"></div>
+      </section>
+      <section>
+        <h2>语料库（点击切换）</h2>
+        <div class="grid" id="corpora"></div>
+      </section>
+      <div class="tip">
+        加新内容跟 Minecraft 装 mod 一样：往
+        <code>src/live2d_page/Resources/models/新名字/</code> 丢一个模特文件夹（含 <code>model.json</code>），
+        往 <code>src/corpora/新名字/</code> 丢一个语料文件夹（含 <code>corpus.json</code> + <code>faq.json</code>），
+        回来点「刷新列表」即可出现。
+      </div>
+    </main>
+
+    <script>
+      const $ = id => document.getElementById(id)
+      let data = null
+
+      async function load() {
+        const r = await fetch('/api/config')
+        data = await r.json()
+        render()
+      }
+
+      function render() {
+        const { models, corpora, active } = data
+        $('combo').innerHTML = `当前组合：模特 <b>${modelName(active.model_id)}</b> + 语料 <b>${corpusName(active.corpus_id)}</b>`
+
+        $('models').innerHTML = ''
+        if (!models.length) $('models').innerHTML = '<div class="empty">没有模特，往 models/ 丢文件夹即可</div>'
+        for (const m of models) {
+          $('models').appendChild(card(m, 'model', active.model_id === m.id))
+        }
+
+        $('corpora').innerHTML = ''
+        if (!corpora.length) $('corpora').innerHTML = '<div class="empty">没有语料，往 corpora/ 丢文件夹即可</div>'
+        for (const c of corpora) {
+          $('corpora').appendChild(corpusCard(c, active.corpus_id === c.id))
+        }
+      }
+
+      function modelName(id) {
+        const m = (data.models || []).find(x => x.id === id)
+        return m ? m.name : (id || '无')
+      }
+      function corpusName(id) {
+        const c = (data.corpora || []).find(x => x.id === id)
+        return c ? c.name : (id || '无')
+      }
+
+      function card(m, kind, active) {
+        const el = document.createElement('div')
+        el.className = 'card' + (active ? ' active' : '')
+        const thumb = m.preview ? `/Resources/models/${m.id}/${m.preview}` : ''
+        el.innerHTML = `
+          <div class="check">✓</div>
+          ${thumb ? `<img class="thumb" src="${thumb}" alt="${m.name}" loading="lazy" />` : `<div class="thumb"></div>`}
+          <div class="name">${m.name}</div>
+          <div class="meta">${m.type === 'puppet' ? '2D 立绘' : 'Live2D'}${m.voice ? ' · ' + shortVoice(m.voice) : ''}</div>
+          ${m.type === 'live2d' ? '<div class="badge">Live2D</div>' : '<div class="badge">立绘</div>'}
+        `
+        el.onclick = () => switchTo({ model_id: m.id })
+        return el
+      }
+
+      function corpusCard(c, active) {
+        const el = document.createElement('div')
+        el.className = 'card' + (active ? ' active' : '')
+        el.innerHTML = `
+          <div class="check">✓</div>
+          <div class="thumb" style="display:flex;align-items:center;justify-content:center;background:var(--accent-dim);color:var(--accent);font-size:28px;">文</div>
+          <div class="name">${c.name}</div>
+          <div class="meta">${(c.loop_lines ? c.loop_lines.length : 0)} 条开场白</div>
+        `
+        el.onclick = () => switchTo({ corpus_id: c.id })
+        return el
+      }
+
+      function shortVoice(v) {
+        const m = v.match(/-([A-Za-z]+)Neural/)
+        return m ? m[1] : v
+      }
+
+      async function switchTo(payload) {
+        try {
+          await fetch('/api/switch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+          await load()
+        } catch (e) {
+          alert('切换失败：' + e)
+        }
+      }
+
+      $('refresh').onclick = load
+      $('open-stage').onclick = () => window.open('/stage.html', '_blank')
+
+      load()
+    </script>
+  </body>
+</html>

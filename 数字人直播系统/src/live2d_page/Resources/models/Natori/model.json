@@ -1,0 +1,9 @@
+{
+  "name": "Natori（名取）",
+  "type": "live2d",
+  "model": "Natori.model3.json",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "zoom": 2.0,
+  "y": 0.0,
+  "preview": "Natori.2048/texture_00.png"
+}

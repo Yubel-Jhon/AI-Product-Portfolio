@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+    <title>动漫数字人</title>
+    <style>
+      :root {
+        --bg: #0e0f13; --panel: #171922; --border: #2a2d3a;
+        --text: #e8eaf0; --muted: #8a8f9e; --accent: #ffd54f;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; overflow: hidden; }
+      body {
+        display: flex; flex-direction: column; background: var(--bg); color: var(--text);
+        font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+      }
+      #toolbar {
+        display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+        padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--border);
+        flex: none; -webkit-app-region: drag;  /* 顶部可拖拽窗口 */
+      }
+      #toolbar * { -webkit-app-region: no-drag; }
+      .brand { font-size: 15px; font-weight: 700; letter-spacing: 1px; margin-right: 6px; }
+      .brand .dot { color: var(--accent); }
+      .field { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+      select {
+        background: var(--bg); color: var(--text); border: 1px solid var(--border);
+        border-radius: 8px; padding: 6px 10px; font-size: 13px; outline: none; cursor: pointer;
+        min-width: 140px;
+      }
+      select:hover { border-color: var(--accent); }
+      button {
+        cursor: pointer; border: 1px solid var(--border); border-radius: 8px;
+        background: var(--bg); color: var(--text); padding: 6px 14px; font-size: 13px;
+      }
+      button:hover { border-color: var(--accent); }
+      #combo { color: var(--muted); font-size: 12px; margin-left: auto; }
+      #combo b { color: var(--accent); }
+      #stage { flex: 1; width: 100%; border: none; background: #000; display: block; }
+    </style>
+  </head>
+  <body>
+    <div id="toolbar">
+      <span class="brand">动漫数字人<span class="dot"> · </span></span>
+      <div class="field">模特
+        <select id="model-select"></select>
+      </div>
+      <div class="field">语料
+        <select id="corpus-select"></select>
+      </div>
+      <button id="refresh" title="重新扫描 models/ 和 corpora/ 目录">刷新列表</button>
+      <span id="combo"></span>
+    </div>
+    <iframe id="stage" src="/stage.html" title="直播画面"></iframe>
+
+    <script>
+      const $ = id => document.getElementById(id)
+      const modelSel = $('model-select')
+      const corpusSel = $('corpus-select')
+      let data = null
+
+      async function load() {
+        const r = await fetch('/api/config')
+        data = await r.json()
+        fill(modelSel, data.models, data.active.model_id)
+        fill(corpusSel, data.corpora, data.active.corpus_id)
+        renderCombo()
+      }
+
+      function fill(sel, items, activeId) {
+        const cur = sel.value
+        sel.innerHTML = ''
+        for (const it of items) {
+          const o = document.createElement('option')
+          o.value = it.id
+          o.textContent = it.name
+          sel.appendChild(o)
+        }
+        sel.value = activeId
+      }
+
+      function renderCombo() {
+        const m = (data.models || []).find(x => x.id === modelSel.value)
+        const c = (data.corpora || []).find(x => x.id === corpusSel.value)
+        $('combo').innerHTML = `当前：模特 <b>${m ? m.name : '—'}</b> · 语料 <b>${c ? c.name : '—'}</b>`
+      }
+
+      async function switchTo(payload) {
+        try {
+          await fetch('/api/switch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+          renderCombo()
+          // iframe 里的 stage 会收到 WS reload 自动重渲染，不用手动刷新
+        } catch (e) {
+          alert('切换失败：' + e)
+        }
+      }
+
+      modelSel.onchange = () => switchTo({ model_id: modelSel.value })
+      corpusSel.onchange = () => switchTo({ corpus_id: corpusSel.value })
+      $('refresh').onclick = load
+
+      load()
+    </script>
+  </body>
+</html>
