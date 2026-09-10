@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>钟于泊 · AI 产品经理</title>
+<style>
+:root{
+  --ink:#212528;
+  --accent:#155E63;
+  --accent-soft:#EAF2F1;
+  --muted:#66707A;
+  --rule:#E2E0DA;
+  --paper:#FFFFFF;
+}
+*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+html,body{margin:0;padding:0;}
+body{
+  background:#F0EFEB;
+  color:var(--ink);
+  font-family:"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif;
+  font-size:10.4pt;
+  line-height:1.58;
+}
+.sheet{
+  max-width:830px;
+  margin:26px auto;
+  background:var(--paper);
+  padding:46px 54px 40px;
+  box-shadow:0 1px 5px rgba(30,35,40,.10);
+}
+@media print{
+  body{background:#FFFFFF;}
+  .sheet{margin:0;max-width:none;box-shadow:none;padding:0;}
+  @page{size:A4;margin:13mm 12mm 12mm;}
+}
+h2,h3{page-break-after:avoid;break-after:avoid;}
+li,p{page-break-inside:avoid;break-inside:avoid;}
+
+/* ---------- 头部 ---------- */
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;border-bottom:2.5px solid var(--ink);padding-bottom:14px;}
+.name h1{margin:0;font-size:23pt;font-weight:700;letter-spacing:.06em;line-height:1.15;}
+.name .role{margin-top:5px;color:var(--accent);font-weight:700;font-size:11.5pt;letter-spacing:.02em;}
+.contact{text-align:right;font-size:8.6pt;color:var(--muted);line-height:1.85;white-space:nowrap;}
+.contact b{color:var(--ink);font-weight:600;}
+.contact a{color:inherit;text-decoration:none;}
+
+/* ---------- 分区标题 ---------- */
+section{margin-top:19px;}
+h2{
+  display:flex;align-items:baseline;gap:9px;
+  margin:0 0 9px;font-size:12.6pt;font-weight:700;color:var(--ink);
+  border-bottom:1px solid var(--rule);padding-bottom:5px;
+}
+h2 .en{font-size:8.6pt;font-weight:600;color:var(--accent);letter-spacing:.12em;}
+
+/* ---------- 简介与通用列表 ---------- */
+.lead{margin:0 0 7px;}
+ul{margin:0;padding:0;list-style:none;}
+li{position:relative;padding-left:14px;margin-bottom:4.5px;}
+li::before{content:"";position:absolute;left:1px;top:.62em;width:5px;height:5px;background:var(--accent);}
+b,strong{font-weight:700;}
+
+/* ---------- 项目 ---------- */
+.proj{margin-bottom:13px;}
+.proj-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:2px;}
+.proj-head h3{margin:0;font-size:11.4pt;font-weight:700;}
+.proj-head .meta{color:var(--accent);font-size:8.8pt;font-weight:600;white-space:nowrap;}
+.repo{color:var(--muted);font-size:8.8pt;margin-bottom:4px;}
+.repo code{font-family:Consolas,"Courier New",monospace;font-size:8.8pt;color:var(--ink);background:var(--accent-soft);padding:1px 5px;border-radius:2px;}
+.proj-desc{margin:3px 0 5px;color:#3A4046;font-size:9.7pt;}
+
+/* ---------- 方法论 ---------- */
+.method-sub{margin:3px 0 3px;font-weight:700;}
+.method-sub li ul{margin-top:2px;}
+.method-sub li li{color:#3A4046;font-size:9.6pt;margin-bottom:2px;}
+
+/* ---------- 工作经历 ---------- */
+.job{margin-bottom:11px;page-break-inside:avoid;}
+.job-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;}
+.job-head h3{margin:0;font-size:11.2pt;font-weight:700;}
+.job-head .time{color:var(--muted);font-size:9pt;white-space:nowrap;}
+.job-head .title{color:var(--accent);font-weight:600;font-size:10pt;}
+.job .title-line{display:flex;justify-content:space-between;align-items:baseline;gap:12px;}
+
+/* ---------- 教育 / 技能 ---------- */
+.edu{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:10.6pt;}
+.edu .time{color:var(--muted);font-size:9pt;}
+.skill p{margin:0 0 6px;}
+.skill .lab{font-weight:700;color:var(--accent);}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<header>
+  <div class="name">
+    <h1>钟于泊</h1>
+    <div class="role">AI 产品经理 · AI Agent / 大模型应用方向</div>
+  </div>
+  <div class="contact">
+    <b>18258225752</b> · dy.yubel@gmail.com<br>
+    GitHub：<b>Yubel-Jhon</b>（6 个 AI 项目全部开源）<br>
+    个人站：<b>124.70.176.175</b>
+  </div>
+</header>
+
+<section>
+  <h2>个人简介<span class="en">PROFILE</span></h2>
+  <ul>
+    <li class="lead"><b>AI 产品落地：</b>独立完成 <b>6 个 AI 项目</b>，从问题定义、架构设计到工程实现、上线运行与迭代验证，覆盖 Agent 编排、RAG 防幻觉、图生图、数据流水线、降级兜底与指标调优，<b>全部开源</b>（GitHub: Yubel-Jhon），面试可现场运行</li>
+    <li class="lead"><b>AI 系统设计：</b>先把模糊需求定成可验收的指标，再围绕指标做架构与成本取舍：大模型选型、Agent 编排（意图识别、槽位、多轮追问、兜底降级）、RAG 检索与防幻觉策略、可靠性设计（幂等、熔断、Kill Switch），每一项都有对应的开源项目支撑</li>
+    <li class="lead"><b>跨域迁移：</b>时尚高定 → 非遗文创 → 时尚 AI，三次跨领域独立学习完成，擅长快速理解陌生行业流程并沉淀为产品方案</li>
+  </ul>
+</section>
+
+<section>
+  <h2>AI 产品实战经历<span class="en">PROJECTS</span></h2>
+
+  <div class="proj">
+    <div class="proj-head"><h3>① AI Agent 行业情报 Skill</h3><span class="meta">独立开发 · 每日运行 · 开源</span></div>
+    <div class="repo"><code>Yubel-Jhon/Daily-Briefing-on-the-AI-Agent-Industry</code> · 纯 Python 标准库，零第三方依赖</div>
+    <p class="proj-desc">AI Agent 赛道迭代快，情报散在 changelog、GitHub、公众号等渠道，人工盯 12 家厂商不现实。把这件事做成一个每日自动运行的 Skill 智能体，持续产出可采信的结构化情报。</p>
+    <ul>
+      <li><b>产品定义与信息架构：</b>主导 0→1，定义触发条件、执行步骤与输出规范。竞品认知分两层管：<b>「已知事实」</b>（定位、开源、模型）季度核对一次，<b>「变化信息」</b>（定价、迭代、融资）每次刷新，日常迭代只动第二层，维护成本压到可日常运行</li>
+      <li><b>自动化流水线与能力拆分：</b>独立搭建采集、解析、核验、diff、推送的全流程，盯字节、阿里、腾讯、百度、月之暗面等 <b>12 家厂商</b>。按单一职责拆成 fetch（脚本）、verify（脚本 + LLM）、update（LLM）、notify（可选）四块；纯 Python 标准库 + gh CLI，零第三方依赖，换台机器就能跑</li>
+      <li><b>可信度与边界设计：</b>国内大厂多数不公开 changelog，部分站点抓取被网络策略拦截。据此设计两档可信度评级（<b>谁在说、有无第二家来源</b>），源注册表里标明哪些渠道有盲区；读不到原文就标注读不到，不编造</li>
+    </ul>
+  </div>
+
+  <div class="proj">
+    <div class="proj-head"><h3>② 商品企划生成 Agent</h3><span class="meta">独立开发 · 开源</span></div>
+    <div class="repo"><code>Yubel-Jhon/Accessory-Merchandising-Planning-</code> · 2026-09 最新迭代</div>
+    <p class="proj-desc">传统服饰商品企划靠企划师个人经验：选品逻辑、对标方案、企划 deck 都要人工逐个做。做一个端到端的生成 Agent，输入一张产品图，输出一份能直接汇报的企划 deck。</p>
+    <ul>
+      <li><b>产品架构设计：</b>流程分三段：起盘选一张产品图；转换阶段用通义 qwen-image-3.0-pro 批量生成 7 类视觉方案，点选定稿；组装阶段自动产出 6 段选品逻辑与商品编排，一键导出 PPT/HTML。从图到 deck 一条线跑通</li>
+      <li><b>领域数据资产建设：</b>自建 3 方向 × 4 品类中英双语选品库，以及图类型 prompt、零售商风格、对标库。Agent 生成选品逻辑和出图 prompt 都从这里取材，输出贴近真实商品企划的工作语言</li>
+      <li><b>工程落地与可用性：</b>Flask 后端（生图 / 导出 API）+ pywebview 桌面端，双击启动脚本自动装依赖、开浏览器，零配置可用；关闭 prompt_extend 后单张出图 <b>20–60s（提速约 20 倍）</b>，API Key 自动读取，演示走「载入示例 → 出图定稿 → 导出企划」最短路径</li>
+    </ul>
+  </div>
+
+  <div class="proj">
+    <div class="proj-head"><h3>③ 动漫数字人直播系统</h3><span class="meta">全流程落地 · 开源</span></div>
+    <div class="repo"><code>Yubel-Jhon/Anime-Digital-Human</code> · 潮玩盲盒带货场景</div>
+    <p class="proj-desc">潮玩盲盒直播间靠真人主播，时长和人力成本都受限。做一个能 7×24 在播的动漫数字人：观众弹幕要能实时答，商品信息不能瞎编，口播还要对上嘴型。</p>
+    <ul>
+      <li><b>场景定义与指标设计：</b>只定两条硬指标：<b>知识库命中率 ≥90%</b>（不瞎编）、<b>端到端延迟 ≤10s</b>（能实时答），之后的架构与成本取舍全部对着这两条来</li>
+      <li><b>系统架构与技术选型：</b>设计「弹幕接入 → RAG 检索 → LLM 生成 → TTS → 嘴型驱动」全链路。命中知识库直接照抄标准答案，从根上防幻觉；没命中走 DeepSeek 生成；没有 API Key 就自动降级到 FAQ 标准答案，直播间不下线。GPU 推理放远端，本地只做编排</li>
+      <li><b>性能调优与迭代：</b>前后换了 5 版技术路线，从 SadTalker 视频、Live2D 实时到 mod 化和 Electron 桌面包。BGE 模型预热把首答延迟从 <b>11s 降到 3.7s</b>，进入 ≤10s 指标以内</li>
+      <li><b>交付与文档：</b>4 条嘴型同步 demo 视频（价格、正品、隐藏款、发货问答），MRD/PRD 与踩坑复盘全部开源；密钥走 .env，不进仓库</li>
+    </ul>
+  </div>
+
+  <div class="proj">
+    <div class="proj-head"><h3>④ 微信 AI 打车助手</h3><span class="meta">0→1 产品设计 · 全量方案文档</span></div>
+    <p class="proj-desc">在微信 13 亿月活里，叫车要切 App，等车还要来回盯屏。设计对话式叫车 Agent 方案，把 6 步操作压成一句话。</p>
+    <ul>
+      <li><b>Agent 方案设计：</b>设计「AI Agent + MCP」对话式叫车架构，定义 <b>5 个 MCP 工具接口</b>；编排 5 类意图识别 + 槽位提取 + 追问 ≤2 轮 + 二次确认，<b>置信度 &lt;0.7 自动转入规则兜底</b></li>
+      <li><b>可靠性与发布设计：</b>LLM 超时先重试、再落规则引擎；quote_id 做幂等防重复下单；Kill Switch 分级降级，配熔断重试。发布走 alpha、beta、GA 三阶段</li>
+      <li><b>商业论证：</b>完成 TAM/SAM/SOM 测算（<b>SAM ≈ 420 亿 / SOM ≈ 12.6 亿</b>）与 ROI、Go/No-Go 论证，产出 BRD/MRD/PRD/FSD 全量方案，附 Mermaid 架构图、状态机、时序图</li>
+    </ul>
+  </div>
+
+  <div class="proj">
+    <div class="proj-head"><h3>⑤ 个人作品集网站</h3><span class="meta">独立开发 · 上线运行 · 11 版本迭代</span></div>
+    <div class="repo"><code>Yubel-Jhon/PersonaSites</code></div>
+    <ul>
+      <li>用 vibecoding 独立搭建并部署上线，定位「审美 · 产品 · AI」，含 AI 产品 Chiccify 展示、设计作品与个人介绍</li>
+      <li>Three.js / GSAP 做动效；设计、开发、部署、上线、运维全流程自己跑，已迭代 <b>11 个版本</b></li>
+    </ul>
+  </div>
+
+  <div class="proj">
+    <div class="proj-head"><h3>⑥ 小红书数字人账号</h3><span class="meta">26825811440 · 已发布</span></div>
+    <ul>
+      <li>运营时尚个性达人 IP，用 AI 生成统一风格图文并发布 <b>4 篇</b>，验证 AI 内容在社交平台的自然触达与风格一致性</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>工作经历<span class="en">EXPERIENCE</span></h2>
+
+  <div class="job">
+    <div class="job-head"><h3>杭州霖润科技有限公司</h3><span class="time">2025.12 – 2026.5</span></div>
+    <div class="job-head"><span class="title">助理产品经理 · Chiccify 时尚 AI 产品</span></div>
+    <ul>
+      <li><b>竞品研究与产品建议：</b>深度体验 Look、轻链、绘蛙、MuseGate 等时尚 AI 产品，拆解其 Prompt 设计、风格控制与用户动线，输出竞品能力矩阵与功能建议，供版本规划参考</li>
+      <li><b>需求收集与版本跟进：</b>收集用户反馈与客服问题进需求池，协助排定优先级；跟进版本排期、参与测试验收、编写更新日志</li>
+      <li><b>产品数据整理：</b>整理生成量、留存等使用数据，输出周报月报，供版本迭代参考</li>
+      <li><b>训练数据与标注质量：</b>参与社媒时尚方向服装搭配 / 流派数据的标注规则制定，维护风格分类与标签体系，抽检标注质量；边界 case 回流修正规则，保障训练数据质量</li>
+      <li><b>Prompt 实验与内容验证：</b>在 MuseGate 做时尚风格 Prompt 实验，整理风格一致性模板供生成调优参考；用 AI 生成风格统一图文运营小红书账号，验证 AI 内容在社交平台的自然触达</li>
+    </ul>
+  </div>
+
+  <div class="job">
+    <div class="job-head"><h3>徐州马未文化有限公司</h3><span class="time">2025.2 – 2025.9</span></div>
+    <div class="job-head"><span class="title">产品助理</span></div>
+    <ul>
+      <li>独立负责非遗「马庄香包」产品线：产出消费者调研报告并据此定产品定位，与非遗传承人协作完成「古老香包融入现代生活」的改良，从设计开发到生产落地按时按预算交付</li>
+      <li>主导「杭州老玉皇宫 × 见喜」七夕礼盒：挖掘七夕与道教文化结合点，2 款主题方案均被采纳，跟进设计、打样、生产、包装落地</li>
+    </ul>
+  </div>
+
+  <div class="job">
+    <div class="job-head"><h3>杭州赛颂文化有限公司</h3><span class="time">2022.7 – 2024.12</span></div>
+    <div class="job-head"><span class="title">设计部助理设计师</span></div>
+    <ul>
+      <li>参与 10+ 一线明星高定项目的设计细化与法式刺绣工艺落地，作品获 2024 蓄势人气之星（钟楚曦礼服抖音点赞 45w、范冰冰款 27w）</li>
+      <li>负责 2024 刘宇「瀞」演唱会 3 款汉服从设计到现场调度的全流程执行</li>
+      <li>把法式刺绣工艺做成 5+ 个商业化课程与产品，打通从顶尖工艺到商业产品的转化路径</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>教育背景<span class="en">EDUCATION</span></h2>
+  <div class="edu"><span><b>浙江理工大学</b> ｜ 服装与服饰设计（中美合作项目）</span><span class="time">2018.9 – 2024.7</span></div>
+</section>
+
+<section class="skill">
+  <h2>技能<span class="en">SKILLS</span></h2>
+  <p><span class="lab">AI 智能体：</span>Claude Code + Skills 封装 / MCP 配置 / Agent 编排（意图识别 + 槽位提取 + 多轮追问 + 兜底降级）/ Kill Switch 多级降级 / Prompt 注入三层防御 / AI 质量指标设计（命中率 / 延迟 / 误报率）</p>
+  <p><span class="lab">AI 工程：</span>RAG（ChromaDB + BGE 向量化 + Rerank）/ 图生图（通义 qwen-image-3.0-pro / Seedream）/ TTS（edge-tts）/ 嘴型驱动（SadTalker + 3DMM）/ Live2D（pixijs + Cubism Core）/ Flask API / 数据流水线（纯标准库零依赖）</p>
+  <p><span class="lab">方案与需求：</span>0→1 产品方案（BRD / MRD / PRD / FSD）/ TAM-SAM-SOM 商业测算 / Mermaid 架构图 · 状态机 · 时序图 / 指标定义与验收设计</p>
+  <p><span class="lab">工具链：</span>Python / vibecoding / Git + GitHub Actions（git flow）/ Axure / MySQL / Three.js + GSAP / Office / PS</p>
+</section>
+
+</div>
+</body>
+</html>
